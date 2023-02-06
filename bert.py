@@ -43,6 +43,7 @@ for data in dataset['train']:
             answer_str = data['evidences'][0]['obj_surface']
             if predicted_str == answer_str:
                 correct+=1
-            if total%100==0:
+            if total%1000==0:
                 print(total, correct/total)
 
+print("P@1: ", correct/total)
