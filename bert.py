@@ -1,11 +1,12 @@
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer, pipeline
+from transformers import pipeline
 from datasets import load_dataset
 import numpy as np
 import torch
+import json
 # import evaluate
 
 # tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-dataset = load_dataset("json", data_files = "/home/tjrals/jinseok/js_p-tuning/dev_trex.json")
+dataset = load_dataset("json", data_files = "/home/tjrals/jinseok/js_p-tuning/test_data/test_original_relations.json")
 
 
 
@@ -34,16 +35,13 @@ unmasker = pipeline('fill-mask', model='bert-base-cased', device=0)
 total = 0
 correct = 0
 for data in dataset['train']:
-    
-    if data['evidences']!= []:
-        masked_sentence = data['evidences'][0]['masked_sentence']
-        if len(masked_sentence) < 512:
-            total+=1
-            predicted_str = unmasker(masked_sentence)[0]['token_str']
-            answer_str = data['evidences'][0]['obj_surface']
-            if predicted_str == answer_str:
-                correct+=1
-            if total%1000==0:
-                print(total, correct/total)
+    total+=1
+    masked_sentence = data['masked_sentence']
+    predicted_str = unmasker(masked_sentence)[0]['token_str']
+    answer_str = data['obj_label']
+    if predicted_str == answer_str:
+        correct+=1
+    if total%1000==0:
+        print(total, correct/total)
 
-print("P@1: ", correct/total)
+print(f"total: {total}, P@1: {correct/total}")
