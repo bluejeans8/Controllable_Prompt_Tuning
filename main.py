@@ -12,14 +12,14 @@ from transformers import AutoTokenizer
 
 from os.path import join, abspath, dirname
 
-from modeling import Bert
+from modeling import LM
 
 from vocab import *
 from dataset import LAMADataset
 
 
 
-SUPPORT_MODELS = ['bert-base-cased', 'bert-large-cased']
+SUPPORT_MODELS = ['bert-base-cased', 'bert-large-cased', 'gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl']
 
 def set_seed(args):
     np.random.seed(args.seed)
@@ -30,12 +30,19 @@ def set_seed(args):
 def construct_generation_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--model_name", type=str, default='bert-base-cased', choices=SUPPORT_MODELS)
+    parser.add_argument("--model_name", type=str, default='gpt2-medium', choices=SUPPORT_MODELS)
+    parser.add_argument("--pseudo_token", type=str, default='[PROMPT]')
+
+
+
+    parser.add_argument("--template", type=str, default="(3, 3, 3)")
 
     parser.add_argument("--seed", type=int, default=34, help="random seed for initialization")
 
 
     parser.add_argument("--vocab_strategy", type=str, default="shared", choices=['original', 'shared', 'lama'])
+    parser.add_argument("--lstm_dropout", type=float, default=0.0)
+
 
     # directories
     parser.add_argument("--data_dir", type=str, default=join(abspath(dirname(__file__)), './data/LAMA'))
@@ -45,7 +52,9 @@ def construct_generation_args():
     args = parser.parse_args()
     args.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     args.n_gpu = torch.cuda.device_count()
+    args.template = eval(args.template) if type(args.template) is not tuple else args.template
 
+    assert type(args.template) is tuple
     
     set_seed(args)
 
@@ -65,7 +74,7 @@ class Trainer(object):
 
         os.makedirs(self.get_save_path(), exist_ok=True)
 
-        self.model = Bert(args, self.device)
+        self.model = LM(args, self.device, self.args.template)
 
     def evaluate(self):
         self.model.eval()

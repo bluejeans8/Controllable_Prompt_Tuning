@@ -1,11 +1,15 @@
 import torch
 from torch.nn.utils.rnn import pad_sequence
-from transformers import AutoTokenizer, AutoModelForMaskedLM
+from transformers import AutoTokenizer, AutoModelForMaskedLM, GPT2LMHeadModel
 
 from vocab import *
+import re
 
-class Bert(torch.nn.Module):
-    def __init__(self, args, device):
+from prompt_encoder import PromptEncoder
+
+class LM(torch.nn.Module):
+
+    def __init__(self, args, device, template):
         super().__init__()
         self.args = args
         self.device = device
@@ -13,16 +17,39 @@ class Bert(torch.nn.Module):
         tokenizer_src = self.args.model_name
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_src, use_fast=False)
 
-        self.model = AutoModelForMaskedLM.from_pretrained(self.args.model_name)
-        self.model = self.model.to(self.device)
+        if 'bert' in self.args.model_name:
+            MODEL_CLASS = AutoModelForMaskedLM
+        elif 'gpt' in self.args.model_name:
+            MODEL_CLASS = GPT2LMHeadModel
+        self.model = MODEL_CLASS.from_pretrained(self.args.model_name).to(self.device)
 
-        self.embeddings = self.model.bert.get_input_embeddings()
+        if 'bert' in self.args.model_name:
+            self.embeddings = self.model.bert.get_input_embeddings()
+        elif 'gpt' in self.args.model_name:
+            self.embeddings = self.model.base_model.get_input_embeddings()
+
         
         # set allowed vocab set
         self.vocab = self.tokenizer.get_vocab()
         self.allowed_vocab_ids = set(self.vocab[k] for k in get_vocab_by_strategy(self.args, self.tokenizer))
 
+        if 'gpt' in self.args.model_name:
+            template = (template[0], template[1], 0)
+            print(template)
+        self.template = template
+        
+
+        # load prompt encoder
+        self.hidden_size = self.embeddings.embedding_dim
+        self.tokenizer.add_special_tokens({'additional_special_tokens': [self.args.pseudo_token]})
+        self.pseudo_token_id = self.tokenizer.get_vocab()[self.args.pseudo_token]
+
         self.pad_token_id = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.unk_token_id
+
+
+        self.spell_length = sum(self.template)
+        self.prompt_encoder = PromptEncoder(self.template, self.hidden_size, self.tokenizer, self.device, args)
+        self.prompt_encoder = self.prompt_encoder.to(self.device)
 
 
     def embed_input(self, queries):
@@ -33,11 +60,15 @@ class Bert(torch.nn.Module):
         return raw_embeds
 
     def get_query(self, x_h):
-        query = x_h.replace('[MASK]', self.tokenizer.mask_token)
+        if 'gpt' in self.args.model_name:
+            query = re.sub(r'\[MASK\].*', '', x_h)
+        else:
+            query = x_h.replace('[MASK]', self.tokenizer.mask_token)
         return self.tokenizer(' ' + query)['input_ids']
 
     def forward(self, x_hs, x_ts, return_candidates=False):
         bz = len(x_hs)
+        x_ts = [token_wrapper(self.args, x_t) for x_t in x_ts]
         queries = [torch.LongTensor(self.get_query(x_hs[i])).squeeze(0) for i in range(bz)]
         queries = pad_sequence(queries, True, padding_value=self.pad_token_id).long().to(self.device)
 
@@ -68,6 +99,37 @@ class Bert(torch.nn.Module):
                 return loss, hit1, top10
             return loss, hit1
 
-        return bert_out()
+        def gpt_out():
+            labels = torch.empty_like(queries).fill_(-100).long().to(self.device)  # bz * seq_len
+            label_mask = (attention_mask.long().sum(dim=1) - 1).unsqueeze(1).to(self.device)
+            labels = labels.scatter_(1, label_mask, label_ids)
 
+            output = self.model(inputs_embeds=inputs_embeds.to(self.device).half(),
+                                attention_mask=attention_mask.to(self.device).half(),
+                                labels=labels.to(self.device))
+            loss, logits = output.loss, output.logits
+
+            pred_ids = torch.argsort(logits, dim=2, descending=True)
+            hit1 = 0
+            top10 = []
+            for i in range(bz):
+                top10.append([])
+                pred_seq = pred_ids[i, label_mask[i, 0]].tolist()
+                for pred in pred_seq:
+                    if pred in self.allowed_vocab_ids:
+                        top10[-1].append(pred)
+                        if len(top10[-1]) >= 10:
+                            break
+                pred = top10[-1][0]
+                if pred == label_ids[i, 0]:
+                    hit1 += 1
+
+            if return_candidates:
+                return loss, hit1, top10
+            return loss, hit1
+
+        if 'bert' in self.args.model_name:
+            return bert_out()
+        elif 'gpt' in self.args.model_name:
+            return gpt_out()
 

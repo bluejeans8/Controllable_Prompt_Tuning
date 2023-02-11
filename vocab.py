@@ -9,17 +9,30 @@ def init_vocab(args):
 
 def get_vocab(model_name, strategy):
     if strategy == 'shared':
-        assert model_name in shared_vocab
-        return shared_vocab[model_name]
+        if 'gpt' in model_name:
+            return shared_vocab['gpt2-xl']
+        else:
+            assert model_name in shared_vocab
+            return shared_vocab[model_name]
     elif strategy == 'lama':
-        assert model_name in lama_vocab
-        return lama_vocab[model_name]
+        if 'gpt' in model_name:
+            return lama_vocab['gpt2-xl']
+        else:
+            assert model_name in lama_vocab
+            return lama_vocab[model_name]
 
 def get_vocab_by_strategy(args, tokenizer):
     if args.vocab_strategy == 'original':
         return tokenizer.get_vocab()
     else:
         return get_vocab(args.model_name, args.vocab_strategy)
+
+
+def token_wrapper(args, token):
+    if 'gpt' in args.model_name:
+        return 'Ġ' + token
+    else:
+        return token
 
 
 

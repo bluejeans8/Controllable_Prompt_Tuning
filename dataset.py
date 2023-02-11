@@ -1,7 +1,7 @@
 from torch.utils.data import Dataset
 import json
 
-from vocab import get_vocab_by_strategy
+from vocab import get_vocab_by_strategy, token_wrapper
 
 
 class LAMADataset(Dataset):
@@ -20,7 +20,7 @@ class LAMADataset(Dataset):
 
         vocab = get_vocab_by_strategy(args, tokenizer)
         for d in data:
-            if d['obj_label'] not in vocab:
+            if token_wrapper(args, d['obj_label']) not in vocab:
                 continue
             self.x_ts.append(d['obj_label'])
             self.x_hs.append(d['masked_sentence'])
