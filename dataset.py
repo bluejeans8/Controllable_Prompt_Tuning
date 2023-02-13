@@ -5,7 +5,7 @@ from vocab import get_vocab_by_strategy, token_wrapper
 
 
 class LAMADataset(Dataset):
-    def __init__(self, dataset_type, tokenizer, args, pid):
+    def __init__(self, dataset_type, tokenizer, args, pid=None):
         super().__init__()
         self.args = args
         self.data = list()
@@ -21,12 +21,14 @@ class LAMADataset(Dataset):
         for d in cases:
             if token_wrapper(args, d['obj_label']) not in vocab:
                 continue
-            if d['predicate_id'] != pid:
-                continue
+            if pid!=None:
+                if d['predicate_id'] != pid:
+                    continue
             self.x_hs.append(d['sub_label'])
             self.x_ts.append(d['obj_label'])
             self.x_rels.append(d['relation'])
             self.data.append(d)
+        print(self.dataset_type, len(self.data))
 
     def __len__(self):
         return len(self.data)

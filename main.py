@@ -33,7 +33,7 @@ def set_seed(args):
 def construct_generation_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--model_name", type=str, default='bert-large-cased', choices=SUPPORT_MODELS)
+    parser.add_argument("--model_name", type=str, default='bert-base-cased', choices=SUPPORT_MODELS)
     parser.add_argument("--pseudo_token", type=str, default='[PROMPT]')
 
 
@@ -66,7 +66,7 @@ def construct_generation_args():
     return args
 
 class Trainer(object):
-    def __init__(self, args, pid):
+    def __init__(self, args, pid=None):
         self.args = args
         self.pid = pid
         self.device = 'cuda:0'
@@ -184,7 +184,7 @@ def train_by_relation(args):
     print(pids)
 
   
-    with open("./results/result_bert-large-cased.txt", "w") as rf:
+    with open("result_bert-large-cased.txt", "w") as rf:
         total_size = 0
         total_hits = 0
         for pid in pids:
@@ -202,14 +202,19 @@ def train_by_relation(args):
         
         print("result:", total_hits, total_size, total_hits/total_size)
 
-
-        
+def train_whole(args):
+    trainer = Trainer(args)
+    best_ckpt = trainer.train()
+    size = best_ckpt['test_size']
+    hits = best_ckpt['test_hit@1'] * size
+    print("result:", hits, size, hits/size)
+       
 
 
 def main():
     args = construct_generation_args()
     print(args.model_name)
-    train_by_relation(args)
+    train_whole(args)
 
 if __name__ == '__main__':
     main()
