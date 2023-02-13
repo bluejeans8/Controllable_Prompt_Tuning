@@ -37,11 +37,11 @@ class PromptEncoder(torch.nn.Module):
 
         print("init prompt encoder...")
 
-        def forward(self):
-            input_embeds = self.embedding(self.seq_indices).unsqueeze(0)
-            output_embeds = self.mlp_head(self.lstm_head(input_embeds)[0]).squeeze()
-            return output_embeds
-                          
+    def forward(self):
+        input_embeds = self.embedding(self.seq_indices).unsqueeze(0)
+        output_embeds = self.mlp_head(self.lstm_head(input_embeds)[0]).squeeze()
+        return output_embeds
+                        
 
 
 

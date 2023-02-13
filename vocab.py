@@ -21,6 +21,7 @@ def get_vocab(model_name, strategy):
             assert model_name in lama_vocab
             return lama_vocab[model_name]
 
+
 def get_vocab_by_strategy(args, tokenizer):
     if args.vocab_strategy == 'original':
         return tokenizer.get_vocab()

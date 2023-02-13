@@ -55,21 +55,48 @@ class LM(torch.nn.Module):
     def embed_input(self, queries):
         bz = queries.shape[0]
         queries_for_embedding = queries.clone()
+        queries_for_embedding[(queries == self.pseudo_token_id)] = self.tokenizer.unk_token_id
         raw_embeds = self.embeddings(queries_for_embedding)
 
+        if self.args.use_original_template:
+            return raw_embeds
+
+        blocked_indices = (queries == self.pseudo_token_id).nonzero().reshape((bz, self.spell_length, 2))[:, :, 1]  # bz
+        replace_embeds = self.prompt_encoder()
+        for bidx in range(bz):
+            for i in range(self.prompt_encoder.spell_length):
+                raw_embeds[bidx, blocked_indices[bidx, i], :] = replace_embeds[i, :]
         return raw_embeds
 
-    def get_query(self, x_h):
-        if 'gpt' in self.args.model_name:
-            query = re.sub(r'\[MASK\].*', '', x_h)
-        else:
-            query = x_h.replace('[MASK]', self.tokenizer.mask_token)
-        return self.tokenizer(' ' + query)['input_ids']
 
-    def forward(self, x_hs, x_ts, return_candidates=False):
+    def get_query(self, x_h, x_rel, prompt_tokens):
+        # For using handcraft prompts
+        if self.args.use_original_template:
+            if 'gpt' in self.args.model_name:
+                query = re.sub(r'\[Y\].*', '', x_rel).replace('[X]', x_h)
+            else:
+                query = x_rel.replace('[Y]', self.tokenizer.mask_token).replace('[X]', x_h)
+            return self.tokenizer(' ' + query)['input_ids']
+        
+        # For P-tuning
+        if 'bert' in self.args.model_name:
+            return [[self.tokenizer.cls_token_id]  # [CLS]
+                    + prompt_tokens * self.template[0]
+                    + [self.tokenizer.mask_token_id]  # head entity
+                    + prompt_tokens * self.template[1]
+                    + self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize(' ' + x_h))  # [MASK] (tail entity)
+                    + (prompt_tokens * self.template[2] if self.template[2] > 0 else self.tokenizer.convert_tokens_to_ids(['.']))
+                    + [self.tokenizer.sep_token_id]
+                    ]
+        
+        
+
+    def forward(self, x_hs, x_ts, x_rels, return_candidates=False):
         bz = len(x_hs)
+
+        prompt_tokens = [self.pseudo_token_id]
         x_ts = [token_wrapper(self.args, x_t) for x_t in x_ts]
-        queries = [torch.LongTensor(self.get_query(x_hs[i])).squeeze(0) for i in range(bz)]
+        queries = [torch.LongTensor(self.get_query(x_hs[i], x_rels[i], prompt_tokens)).squeeze(0) for i in range(bz)]
         queries = pad_sequence(queries, True, padding_value=self.pad_token_id).long().to(self.device)
 
         label_ids = torch.LongTensor(self.tokenizer.convert_tokens_to_ids(x_ts)).reshape((bz, -1)).to(self.device)
