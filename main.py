@@ -184,7 +184,7 @@ def train_by_relation(args):
     print(pids)
 
   
-    with open("result_bert-large-cased.txt", "w") as rf:
+    with open("./results/result_bert-large-cased.txt", "w") as rf:
         total_size = 0
         total_hits = 0
         for pid in pids:
