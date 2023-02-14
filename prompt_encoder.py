@@ -21,10 +21,10 @@ class PromptEncoder(torch.nn.Module):
         # self.seq_indices = torch.LongTensor(list(range(len(self.cloze_mask[0])))).to(self.device) # tensor([0, 1, 2, 3, 4, 5, 6, 7, 8]) if bert
 
         # embedding
-        self.embedding = torch.nn.Embedding(len(self.cloze_mask[0]), self.hidden_size).to(self.device)
+        self.embedding = torch.nn.Embedding(42, self.hidden_size).to(self.device)
 
         # LSTM
-        self.lstm_head = torch.nn.LSTM(input_size=self.hidden_size,
+        self.lstm_head = torch.nn.LSTM(input_size=self.hidden_size, # 768
                                        hidden_size=self.hidden_size // 2,
                                        num_layers=2,
                                        dropout=self.args.lstm_dropout,
@@ -38,13 +38,13 @@ class PromptEncoder(torch.nn.Module):
         print("init prompt encoder...")
 
     def forward(self, x_pids):
-        ids = [(int(pid[1:])%8 + 1) for pid in x_pids]
+        ids = x_pids.tolist()
         if len(ids)!=8:
-            ids += [0] * (8-len(ids))
-                
+            ids += [0] * (8-len(x_pids))
         sequence = torch.LongTensor([0] + ids).to(self.device) # tensor([0] + [ids padding with 0]) if bert
-        input_embeds = self.embedding(sequence).unsqueeze(0)
-        output_embeds = self.mlp_head(self.lstm_head(input_embeds)[0]).squeeze()
+        input_embeds = self.embedding(sequence).unsqueeze(0) # torch.Size([1, 9, 768])
+        lstm_out = self.lstm_head(input_embeds)[0]
+        output_embeds = self.mlp_head(lstm_out).squeeze()
         return output_embeds
                         
 

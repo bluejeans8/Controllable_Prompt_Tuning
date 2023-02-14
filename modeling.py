@@ -40,7 +40,7 @@ class LM(torch.nn.Module):
         
 
         # load prompt encoder
-        self.hidden_size = self.embeddings.embedding_dim
+        self.hidden_size = self.embeddings.embedding_dim # 768
         self.tokenizer.add_special_tokens({'additional_special_tokens': [self.args.pseudo_token]})
         self.pseudo_token_id = self.tokenizer.get_vocab()[self.args.pseudo_token]
 
