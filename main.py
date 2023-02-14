@@ -132,7 +132,7 @@ class Trainer(object):
         best_ckpt = None
         params = [{'params': self.model.prompt_encoder.parameters()}]
         optimizer = torch.optim.Adam(params, lr=1e-5, weight_decay=0.0005)
-        my_lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=0.98)
+        my_lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=0.98) 
 
         if self.args.use_original_template == True:
                 test_loss, test_hit1 = self.evaluate(0, 'test')
