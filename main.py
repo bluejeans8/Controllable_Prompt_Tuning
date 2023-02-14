@@ -33,10 +33,8 @@ def set_seed(args):
 def construct_generation_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--model_name", type=str, default='bert-base-cased', choices=SUPPORT_MODELS)
+    parser.add_argument("--model_name", type=str, default='bert-large-cased', choices=SUPPORT_MODELS)
     parser.add_argument("--pseudo_token", type=str, default='[PROMPT]')
-
-
 
     parser.add_argument("--template", type=str, default="(3, 3, 3)")
 
@@ -44,10 +42,8 @@ def construct_generation_args():
 
     parser.add_argument("--use_original_template", type=bool, default=False)
 
-
     parser.add_argument("--vocab_strategy", type=str, default="shared", choices=['original', 'shared', 'lama'])
     parser.add_argument("--lstm_dropout", type=float, default=0.0)
-
 
     # directories
     parser.add_argument("--data_dir", type=str, default=join(abspath(dirname(__file__)), './data/LAMA'))

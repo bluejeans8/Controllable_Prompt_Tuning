@@ -13,7 +13,7 @@ class LAMADataset(Dataset):
         self.x_hs, self.x_ts, self.x_rels, self.x_pids = [], [], [], []
 
         cases = []
-        with open( f'/home/tjrals/jinseok/js_p-tuning/test_data/{dataset_type}_original_relations.json', "r") as f:
+        with open( f'/home/tjrals/jinseok/Prompting/test_data/{dataset_type}_original_relations.json', "r") as f:
             for line in f.readlines():
                 cases.append(json.loads(line))
 
