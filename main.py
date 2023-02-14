@@ -100,8 +100,8 @@ class Trainer(object):
         with torch.no_grad():
             self.model.eval()
             hit1, loss = 0, 0
-            for x_hs, x_ts, x_rels in loader:
-                _loss, _hit1, top10 = self.model(x_hs, x_ts, x_rels, return_candidates=True)
+            for x_hs, x_ts, x_rels, x_pids in loader:
+                _loss, _hit1, top10 = self.model(x_hs, x_ts, x_rels, x_pids, return_candidates=True)
                 hit1 += _hit1
                 loss += _loss.item()
             hit1 /= len(dataset)
@@ -159,7 +159,7 @@ class Trainer(object):
             tot_loss = 0
             for batch_idx, batch in tqdm(enumerate(self.train_loader)):
                 self.model.train()
-                loss, batch_hit1 = self.model(batch[0], batch[1], batch[2])
+                loss, batch_hit1 = self.model(batch[0], batch[1], batch[2], batch[3])
                 hit1 += batch_hit1
                 tot_loss += loss.item()
                 num_of_samples += len(batch[0])

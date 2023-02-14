@@ -18,7 +18,7 @@ class PromptEncoder(torch.nn.Module):
             + [1] * self.cloze_length[2]  # third cloze
         ]
         self.cloze_mask = torch.LongTensor(self.cloze_mask).bool().to(self.device) # tensor([[True, True, True, True, True, True, True, True, True]]) if bert
-        self.seq_indices = torch.LongTensor(list(range(len(self.cloze_mask[0])))).to(self.device) # tensor([0, 1, 2, 3, 4, 5, 6, 7, 8]) if bert
+        # self.seq_indices = torch.LongTensor(list(range(len(self.cloze_mask[0])))).to(self.device) # tensor([0, 1, 2, 3, 4, 5, 6, 7, 8]) if bert
 
         # embedding
         self.embedding = torch.nn.Embedding(len(self.cloze_mask[0]), self.hidden_size).to(self.device)
@@ -37,8 +37,13 @@ class PromptEncoder(torch.nn.Module):
 
         print("init prompt encoder...")
 
-    def forward(self):
-        input_embeds = self.embedding(self.seq_indices).unsqueeze(0)
+    def forward(self, x_pids):
+        ids = [(int(pid[1:])%8 + 1) for pid in x_pids]
+        if len(ids)!=8:
+            ids += [0] * (8-len(ids))
+                
+        sequence = torch.LongTensor([0] + ids).to(self.device) # tensor([0] + [ids padding with 0]) if bert
+        input_embeds = self.embedding(sequence).unsqueeze(0)
         output_embeds = self.mlp_head(self.lstm_head(input_embeds)[0]).squeeze()
         return output_embeds
                         

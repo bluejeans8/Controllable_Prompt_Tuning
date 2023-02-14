@@ -52,7 +52,7 @@ class LM(torch.nn.Module):
         self.prompt_encoder = self.prompt_encoder.to(self.device)
 
 
-    def embed_input(self, queries):
+    def embed_input(self, queries, x_pids):
         bz = queries.shape[0]
         queries_for_embedding = queries.clone()
         queries_for_embedding[(queries == self.pseudo_token_id)] = self.tokenizer.unk_token_id
@@ -62,7 +62,7 @@ class LM(torch.nn.Module):
             return raw_embeds
 
         blocked_indices = (queries == self.pseudo_token_id).nonzero().reshape((bz, self.spell_length, 2))[:, :, 1]  # bz
-        replace_embeds = self.prompt_encoder()
+        replace_embeds = self.prompt_encoder(x_pids)
         for bidx in range(bz):
             for i in range(self.prompt_encoder.spell_length):
                 raw_embeds[bidx, blocked_indices[bidx, i], :] = replace_embeds[i, :]
@@ -91,7 +91,7 @@ class LM(torch.nn.Module):
         
         
 
-    def forward(self, x_hs, x_ts, x_rels, return_candidates=False):
+    def forward(self, x_hs, x_ts, x_rels, x_pids, return_candidates=False):
         bz = len(x_hs)
 
         prompt_tokens = [self.pseudo_token_id]
@@ -102,7 +102,7 @@ class LM(torch.nn.Module):
         label_ids = torch.LongTensor(self.tokenizer.convert_tokens_to_ids(x_ts)).reshape((bz, -1)).to(self.device)
         attention_mask = queries != self.pad_token_id
 
-        inputs_embeds = self.embed_input(queries)
+        inputs_embeds = self.embed_input(queries, x_pids)
 
         def bert_out():
             label_mask = (queries == self.tokenizer.mask_token_id).nonzero().reshape(bz, -1)[:, 1].unsqueeze(1).to(self.device)  # bz * 1

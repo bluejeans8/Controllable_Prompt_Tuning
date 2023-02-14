@@ -10,7 +10,7 @@ class LAMADataset(Dataset):
         self.args = args
         self.data = list()
         self.dataset_type = dataset_type
-        self.x_hs, self.x_ts, self.x_rels = [], [], []
+        self.x_hs, self.x_ts, self.x_rels, self.x_pids = [], [], [], []
 
         cases = []
         with open( f'/home/tjrals/jinseok/js_p-tuning/test_data/{dataset_type}_original_relations.json', "r") as f:
@@ -27,6 +27,7 @@ class LAMADataset(Dataset):
             self.x_hs.append(d['sub_label'])
             self.x_ts.append(d['obj_label'])
             self.x_rels.append(d['relation'])
+            self.x_pids.append(d['predicate_id'])
             self.data.append(d)
         print(self.dataset_type, len(self.data))
 
@@ -35,4 +36,4 @@ class LAMADataset(Dataset):
 
 
     def __getitem__(self, i):
-        return self.data[i]['sub_label'], self.data[i]['obj_label'], self.data[i]['relation']
+        return self.data[i]['sub_label'], self.data[i]['obj_label'], self.data[i]['relation'], self.data[i]['predicate_id']
