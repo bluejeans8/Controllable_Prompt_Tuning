@@ -1,0 +1,2 @@
+Early stopping at epoch 50.                                                                                                         
+result: 14605.0 29518 0.49478284436614944                                                                                           
