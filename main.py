@@ -75,10 +75,10 @@ class Trainer(object):
         self.train_loader = DataLoader(self.train_set, batch_size=8, shuffle=True, drop_last=True)
 
         self.dev_set = LAMADataset('dev', self.tokenizer, self.args, self.pid)
-        self.dev_loader = DataLoader(self.dev_set, batch_size=8)
+        self.dev_loader = DataLoader(self.dev_set, batch_size=8, shuffle=True)
 
         self.test_set = LAMADataset('test', self.tokenizer, self.args, self.pid)
-        self.test_loader = DataLoader(self.test_set, batch_size=8)
+        self.test_loader = DataLoader(self.test_set, batch_size=8, shuffle=True)
 
         os.makedirs(self.get_save_path(), exist_ok=True)
 

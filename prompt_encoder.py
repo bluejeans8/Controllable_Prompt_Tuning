@@ -37,11 +37,8 @@ class PromptEncoder(torch.nn.Module):
 
         print("init prompt encoder...")
 
-    def forward(self, x_pids):
-        ids = x_pids.tolist()
-        if len(ids)!=8:
-            ids += [0] * (8-len(x_pids))
-        sequence = torch.LongTensor([0] + ids).to(self.device) # tensor([0] + [ids padding with 0]) if bert
+    def forward(self, pid):
+        sequence = torch.LongTensor([pid] * 9).to(self.device) # tensor([pid] * 9) if bert
         input_embeds = self.embedding(sequence).unsqueeze(0) # torch.Size([1, 9, 768])
         lstm_out = self.lstm_head(input_embeds)[0]
         output_embeds = self.mlp_head(lstm_out).squeeze()
