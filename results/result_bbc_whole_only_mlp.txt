@@ -1,0 +1,2 @@
+Early stopping at epoch 36.
+result: 13054.0 29518 0.4422386340537977
