@@ -33,7 +33,7 @@ def set_seed(args):
 def construct_generation_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--model_name", type=str, default='bert-base-cased', choices=SUPPORT_MODELS)
+    parser.add_argument("--model_name", type=str, default='gpt2-medium', choices=SUPPORT_MODELS)
     parser.add_argument("--pseudo_token", type=str, default='[PROMPT]')
 
     parser.add_argument("--template", type=str, default="(3, 3, 3)")
@@ -172,15 +172,9 @@ class Trainer(object):
 
 
 def train_by_relation(args):
-    pids = []
-    relation_files = (('/home/tjrals/jinseok/js_p-tuning/data/LAMA/fact-retrieval/original/P*'))
-    for file in glob.glob(relation_files):
-        ver = re.findall(r'P\d*', file)[0]
-        pids.append(ver)
+    pids = [pid for pid in range(1,42)]
     print(pids)
-
-  
-    with open("result_bert-large-cased.txt", "w") as rf:
+    with open("result_gpt2_medium.txt", "w") as rf:
         total_size = 0
         total_hits = 0
         for pid in pids:
@@ -210,7 +204,7 @@ def train_whole(args):
 def main():
     args = construct_generation_args()
     print(args.model_name)
-    train_whole(args)
+    train_by_relation(args)
 
 if __name__ == '__main__':
     main()

@@ -62,15 +62,15 @@ class LM(torch.nn.Module):
             return raw_embeds
 
         blocked_indices = (queries == self.pseudo_token_id).nonzero().reshape((bz, self.spell_length, 2))[:, :, 1]  # bz
+        replace_embeds = self.prompt_encoder(0)
 
         for bidx in range(bz):
-            replace_embeds = self.prompt_encoder(x_pids[bidx])
             for i in range(self.prompt_encoder.spell_length):
                 raw_embeds[bidx, blocked_indices[bidx, i], :] = replace_embeds[i, :]
         return raw_embeds
 
 
-    def get_query(self, x_h, x_rel, prompt_tokens):
+    def get_query(self, x_h, x_rel, prompt_tokens, x_t=None):
         # For using handcraft prompts
         if self.args.use_original_template:
             if 'gpt' in self.args.model_name:
@@ -89,6 +89,16 @@ class LM(torch.nn.Module):
                     + (prompt_tokens * self.template[2] if self.template[2] > 0 else self.tokenizer.convert_tokens_to_ids(['.']))
                     + [self.tokenizer.sep_token_id]
                     ]
+
+        elif 'gpt' in self.args.model_name:
+            # GPT-style models
+            return [prompt_tokens * self.template[0]
+                    + self.tokenizer.convert_tokens_to_ids(self.tokenizer.tokenize(' ' + x_h))  # head entity
+                    + prompt_tokens * self.template[1]
+                    + (self.tokenizer.convert_tokens_to_ids(
+                self.tokenizer.tokenize(' ' + x_t)) if x_t is not None else [])
+                    ]
+
         
         
 

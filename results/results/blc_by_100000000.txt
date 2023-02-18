@@ -1,0 +1,2 @@
+Early stopping at epoch 87.
+result: 16301.0 29518 0.5522393116064774
