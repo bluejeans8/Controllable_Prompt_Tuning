@@ -204,7 +204,7 @@ def train_whole(args):
 def main():
     args = construct_generation_args()
     print(args.model_name)
-    train_by_relation(args)
+    train_whole(args)
 
 if __name__ == '__main__':
     main()

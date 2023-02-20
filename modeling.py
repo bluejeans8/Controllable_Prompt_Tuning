@@ -62,9 +62,9 @@ class LM(torch.nn.Module):
             return raw_embeds
 
         blocked_indices = (queries == self.pseudo_token_id).nonzero().reshape((bz, self.spell_length, 2))[:, :, 1]  # bz
-        replace_embeds = self.prompt_encoder(0)
 
         for bidx in range(bz):
+            replace_embeds = self.prompt_encoder(x_pids[bidx])
             for i in range(self.prompt_encoder.spell_length):
                 raw_embeds[bidx, blocked_indices[bidx, i], :] = replace_embeds[i, :]
         return raw_embeds
