@@ -1,0 +1,2 @@
+# Checkpoint None dev_26.8197_test_26.2484.ckpt saved.
+result: 7748.0 29518 0.26248390812385664
