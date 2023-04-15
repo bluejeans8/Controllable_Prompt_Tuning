@@ -33,7 +33,7 @@ def set_seed(args):
 def construct_generation_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--model_name", type=str, default='gpt2-large', choices=SUPPORT_MODELS)
+    parser.add_argument("--model_name", type=str, default='bert-base-cased', choices=SUPPORT_MODELS)
     parser.add_argument("--pseudo_token", type=str, default='[PROMPT]')
 
     parser.add_argument("--template", type=str, default="(3, 3, 3)")
@@ -108,13 +108,15 @@ class Trainer(object):
         return join(self.args.out_dir, 'prompt_model', self.args.model_name, 'search')
 
     def get_checkpoint(self, dev_hit1, test_hit1):
-        ckpt_name = "{} dev_{}_test_{}.ckpt".format(self.pid, round(dev_hit1 * 100, 4), round(test_hit1 * 100, 4))
+        ckpt_name = "Model {} dev_{}_test_{}.ckpt".format(self.pid, round(dev_hit1 * 100, 4), round(test_hit1 * 100, 4))
         return {'dev_hit@1': dev_hit1,
                 'test_hit@1': test_hit1,
                 'test_size': len(self.test_set),
                 'ckpt_name': ckpt_name,
                 'time': datetime.now(),
-                'args': self.args}
+                'args': self.args,
+                'prompt_encoder': self.model.prompt_encoder
+                }
 
     def save(self, best_ckpt):
         ckpt_name = best_ckpt['ckpt_name']
