@@ -95,27 +95,32 @@ class Trainer(object):
 
         with torch.no_grad():
             self.model.eval()
-            hit1, loss = 0, 0
+            hit1, loss, pid_hits = 0, 0, [0]*41
             for x_hs, x_ts, x_rels, x_pids in loader:
-                _loss, _hit1, top10 = self.model(x_hs, x_ts, x_rels, x_pids, return_candidates=True)
+                _loss, _hit1, pid_hit_list  = self.model(x_hs, x_ts, x_rels, x_pids, return_candidates=True)
                 hit1 += _hit1
                 loss += _loss.item()
+                for i in pid_hit_list:
+                    pid_hits[i-1]+=1 
+
             hit1 /= len(dataset)
-            print("{} {} Epoch Loss: {} Hit@1:".format(dataset_type, epoch_idx, loss / len(dataset)), hit1)
-        return loss, hit1
+            print("{} {} Epoch Loss: {} Hit@1:".format(dataset_type, epoch_idx, loss / len(dataset)), hit1, pid_hits)
+        return loss, hit1, pid_hits
     
     def get_save_path(self):
         return join(self.args.out_dir, 'prompt_model', self.args.model_name, 'search')
 
-    def get_checkpoint(self, dev_hit1, test_hit1):
+    def get_checkpoint(self, dev_hit1, test_hit1, dev_pid_hits, test_pid_hits):
         ckpt_name = "Model {} dev_{}_test_{}.ckpt".format(self.pid, round(dev_hit1 * 100, 4), round(test_hit1 * 100, 4))
         return {'dev_hit@1': dev_hit1,
                 'test_hit@1': test_hit1,
+                'dev_pid_hits': dev_pid_hits,
+                'test_pid_hits': test_pid_hits,
                 'test_size': len(self.test_set),
                 'ckpt_name': ckpt_name,
                 'time': datetime.now(),
                 'args': self.args,
-                'prompt_encoder': self.model.prompt_encoder
+                'prompt_encoder': self.model.prompt_encoder.state_dict()
                 }
 
     def save(self, best_ckpt):
@@ -133,17 +138,17 @@ class Trainer(object):
         my_lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=optimizer, gamma=0.98) 
 
         if self.args.use_original_template == True:
-                test_loss, test_hit1 = self.evaluate(0, 'test')
-                dev_loss, dev_hit1 = self.evaluate(0, 'dev')
-                best_ckpt = self.get_checkpoint(dev_hit1, test_hit1)
+                test_loss, test_hit1, test_pid_hits = self.evaluate(0, 'test')
+                dev_loss, dev_hit1, dev_pid_hits = self.evaluate(0, 'dev')
+                best_ckpt = self.get_checkpoint(dev_hit1, test_hit1, dev_pid_hits, test_pid_hits)
                 self.save(best_ckpt)
                 return best_ckpt
 
         for epoch_idx in range(100):
-            dev_loss, dev_hit1 = self.evaluate(epoch_idx, 'dev')
+            dev_loss, dev_hit1, dev_pid_hits = self.evaluate(epoch_idx, 'dev')
             if dev_hit1 >= best_dev:
-                test_loss, test_hit1 = self.evaluate(epoch_idx, 'test')
-                best_ckpt = self.get_checkpoint(dev_hit1, test_hit1)
+                test_loss, test_hit1, test_pid_hits = self.evaluate(epoch_idx, 'test')
+                best_ckpt = self.get_checkpoint(dev_hit1, test_hit1, dev_pid_hits, test_pid_hits)
                 best_dev = dev_hit1
                 early_stop = 0
             else:
@@ -157,7 +162,7 @@ class Trainer(object):
             tot_loss = 0
             for batch_idx, batch in tqdm(enumerate(self.train_loader)):
                 self.model.train()
-                loss, batch_hit1 = self.model(batch[0], batch[1], batch[2], batch[3])
+                loss, batch_hit1, _ = self.model(batch[0], batch[1], batch[2], batch[3])
                 hit1 += batch_hit1
                 tot_loss += loss.item()
                 num_of_samples += len(batch[0])
@@ -199,7 +204,8 @@ def train_whole(args):
     best_ckpt = trainer.train()
     size = best_ckpt['test_size']
     hits = best_ckpt['test_hit@1'] * size
-    print("result:", hits, size, hits/size)
+    test_pid_hits = best_ckpt['test_pid_hits']
+    print("result:", hits, size, hits/size, test_pid_hits)
        
 
 

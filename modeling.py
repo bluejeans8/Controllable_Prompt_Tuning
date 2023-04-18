@@ -37,7 +37,6 @@ class LM(torch.nn.Module):
             template = (template[0], template[1], 0)
             print(template)
         self.template = template
-        
 
         # load prompt encoder
         self.hidden_size = self.embeddings.embedding_dim # 768
@@ -125,6 +124,7 @@ class LM(torch.nn.Module):
             pred_ids = torch.argsort(logits, dim=2, descending=True)
             hit1 = 0
             top10 = []
+            pid_hit_list = []
             for i in range(bz):
                 pred_seq = pred_ids[i, label_mask[i, 0]].tolist()
                 for pred in pred_seq:
@@ -132,10 +132,9 @@ class LM(torch.nn.Module):
                         break
                 if pred == label_ids[i, 0]:
                     hit1 += 1
+                    pid_hit_list.append(x_pids[i])
 
-            if return_candidates:
-                return loss, hit1, top10
-            return loss, hit1
+            return loss, hit1, pid_hit_list
 
         def gpt_out():
             labels = torch.empty_like(queries).fill_(-100).long().to(self.device)  # bz * seq_len
