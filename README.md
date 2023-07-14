@@ -1,6 +1,6 @@
 # Controllable prompt tuning with relation dependent tokens
 
-Official Code Repository for the paper [Controllable prompt tuning with relation dependent tokens](https://github.com/bluejeans8/Controllable_Prompt_Tuning/files/12053069/KCC.2023.Final.pdf) (kcc 2023)   
+Code Repository for the paper [Controllable prompt tuning with relation dependent tokens](https://github.com/bluejeans8/Controllable_Prompt_Tuning/files/12053069/KCC.2023.Final.pdf) (kcc 2023)   
 
 ## Abstract
 프롬팅(Prompting)이란 특정 태스크에 맞는 자연언어 문장인 프롬프트(prompt)를 입력 앞에 추가해주어
