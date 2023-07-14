@@ -38,7 +38,7 @@ class PromptEncoder(torch.nn.Module):
         print("init prompt encoder...")
 
     def forward(self, pid):
-        sequence = torch.LongTensor([pid] + [0] * 8).to(self.device)
+        sequence = torch.LongTensor([0,1,2,3,4,5,6,7,8]).to(self.device)
         input_embeds = self.embedding(sequence).unsqueeze(0) # torch.Size([1, 9, 768])
         lstm_out = self.lstm_head(input_embeds)[0]
         output_embeds = self.mlp_head(lstm_out).squeeze()
